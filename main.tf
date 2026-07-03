@@ -17,8 +17,9 @@ module "vpc" {
   cidr = var.vpc_cidr
   azs  = var.azs
 
-  public_subnets = var.public_subnets # aquí vive el NAT Gateway
-  eks_subnets    = var.eks_subnets    # subnets privadas dedicadas a EKS
+  public_subnets  = var.public_subnets  # aquí vive el NAT Gateway
+  eks_subnets     = var.eks_subnets     # subnets privadas dedicadas a EKS (nodos van aquí)
+  private_subnets = var.private_subnets # no se usa para nada real — ver variables.tf
 
   enable_nat_gateway = true
   single_nat_gateway = true # cost optimization para el lab

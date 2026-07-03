@@ -46,6 +46,12 @@ variable "eks_subnets" {
   default     = ["10.30.11.0/24", "10.30.12.0/24"]
 }
 
+variable "private_subnets" {
+  description = "Pool genérico de subnets privadas de mod-aws-vpc — no se usa para nada en este lab (los nodos van en eks_subnets), pero hay que declararlo porque aws_route.private_nat_gateway del módulo se crea con base en enable_nat_gateway sin revisar si este pool está vacío, y sin esto el conteo interno del módulo queda inconsistente"
+  type        = list(string)
+  default     = ["10.30.21.0/24", "10.30.22.0/24"]
+}
+
 variable "my_ip_cidr" {
   description = "Tu IP pública en formato CIDR (curl ifconfig.me), permitida en el endpoint público de EKS"
   type        = string
