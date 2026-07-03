@@ -5,7 +5,7 @@ cd "$(dirname "$0")/.."
 terraform init -input=false
 terraform apply -auto-approve
 
-aws eks update-kubeconfig --name "$(terraform output -raw cluster_name)" --region "$(terraform output -raw region)"
+aws eks update-kubeconfig --name "$(terraform output -raw cluster_name)" --region "$(terraform output -raw region)" --profile "$(terraform output -raw aws_profile)"
 
 echo "Nodes:"
 kubectl get nodes

@@ -3,9 +3,10 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-# Captura la región ANTES de destruir — después de terraform destroy el state
-# ya no tiene outputs que leer.
+# Captura la región y el profile ANTES de destruir — después de terraform destroy
+# el state ya no tiene outputs que leer.
 REGION="$(terraform output -raw region)"
+PROFILE="$(terraform output -raw aws_profile)"
 
 # 1. Deja que el AWS Load Balancer Controller desprovisione el ALB antes de
 #    destruir el cluster. El ALB lo crea el controller a partir del Ingress,
@@ -20,10 +21,10 @@ terraform destroy -auto-approve
 
 # 3. Verifica que no quedó nada corriendo cobrando
 echo "EC2 instances running:"
-aws ec2 describe-instances --region "$REGION" \
+aws ec2 describe-instances --region "$REGION" --profile "$PROFILE" \
   --filters "Name=instance-state-name,Values=running" \
   --query "Reservations[].Instances[].InstanceId"
 
 echo "Load balancers still up:"
-aws elbv2 describe-load-balancers --region "$REGION" \
+aws elbv2 describe-load-balancers --region "$REGION" --profile "$PROFILE" \
   --query "LoadBalancers[].LoadBalancerArn"

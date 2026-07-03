@@ -16,6 +16,12 @@ variable "region" {
   default     = "us-east-1"
 }
 
+variable "aws_profile" {
+  description = "AWS CLI named profile a usar (evita depender de variables de entorno sueltas en la shell)"
+  type        = string
+  default     = "personal-poc"
+}
+
 variable "vpc_cidr" {
   description = "VPC CIDR block"
   type        = string
