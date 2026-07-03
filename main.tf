@@ -21,6 +21,13 @@ module "vpc" {
   eks_subnets     = var.eks_subnets     # subnets privadas dedicadas a EKS (nodos van aquí)
   private_subnets = var.private_subnets # no se usa para nada real — ver variables.tf
 
+  # Requisito documentado de AWS para EKS: sin esto, el endpoint privado no resuelve por DNS
+  # dentro de la VPC y los nodos no logran unirse al cluster (quedan "Still creating..." y
+  # terminan en CREATE_FAILED / NodeCreationFailure). mod-aws-vpc trae esto en false por
+  # default (el otro consumidor, poc-aws-infra-deploy, no usa EKS así que nunca lo necesitó).
+  enable_dns_hostnames = true
+  enable_dns_support   = true
+
   enable_nat_gateway = true
   single_nat_gateway = true # cost optimization para el lab
 
