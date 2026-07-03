@@ -1,0 +1,23 @@
+# Esta única Application administra todas las demás Applications — la raíz de GitOps
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: app-of-apps
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io # Cascade delete protection
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/sergiohl1324/k8s-learning
+    targetRevision: HEAD
+    path: argocd/apps
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true # Remove resources deleted from Git
+      selfHeal: true # Auto-fix manual changes (drift correction)
+    syncOptions:
+      - CreateNamespace=true

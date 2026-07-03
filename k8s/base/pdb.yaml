@@ -1,0 +1,9 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: nginx-app
+spec:
+  minAvailable: 1 # Siempre mantener al menos 1 pod corriendo durante node drains
+  selector:
+    matchLabels:
+      app: nginx-app

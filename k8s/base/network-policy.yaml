@@ -1,0 +1,28 @@
+# Deny all ingress by default — whitelist only what's needed
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+  namespace: app
+spec:
+  podSelector: {} # Apply to all pods in namespace
+  policyTypes:
+    - Ingress
+---
+# Allow only from ingress controller namespace
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingress-controller
+  namespace: app
+spec:
+  podSelector:
+    matchLabels:
+      app: nginx-app
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system

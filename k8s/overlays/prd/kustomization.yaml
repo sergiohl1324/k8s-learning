@@ -1,0 +1,25 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: app
+
+resources:
+  - ../../base
+
+# Patch: scale up replicas in prd
+patches:
+  - patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 3
+    target:
+      kind: Deployment
+      name: nginx-app
+
+# Override image tag per environment
+images:
+  - name: nginxinc/nginx-unprivileged
+    newTag: "1.27-alpine"
+
+commonLabels:
+  environment: prd
