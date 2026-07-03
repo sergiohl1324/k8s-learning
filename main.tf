@@ -143,7 +143,11 @@ resource "helm_release" "external_secrets" {
     value = module.irsa_external_secrets.role_arn
   }
 
-  depends_on = [module.eks, module.irsa_external_secrets]
+  # Depende también de aws_lb_controller: su chart registra un webhook que intercepta
+  # la creación de CUALQUIER Service en el cluster. Si el pod del controller no está
+  # listo todavía, cualquier otro release que cree un Service falla con "no endpoints
+  # available for service aws-load-balancer-webhook-service".
+  depends_on = [module.eks, module.irsa_external_secrets, helm_release.aws_lb_controller]
 }
 
 resource "helm_release" "argocd" {
@@ -155,7 +159,7 @@ resource "helm_release" "argocd" {
   create_namespace = true
   values           = [file("${path.module}/helm/argocd/values.yaml")]
 
-  depends_on = [module.eks]
+  depends_on = [module.eks, helm_release.aws_lb_controller]
 }
 
 resource "helm_release" "kube_prometheus_stack" {
@@ -164,6 +168,7 @@ resource "helm_release" "kube_prometheus_stack" {
   chart            = "kube-prometheus-stack"
   namespace        = "monitoring"
   create_namespace = true
+  timeout          = 600 # chart pesado (Prometheus operator + CRDs + Grafana) — 300s (default) se quedaba corto
 
   set_sensitive {
     name  = "grafana.adminPassword"
@@ -178,5 +183,5 @@ resource "helm_release" "kube_prometheus_stack" {
     value = "256Mi"
   }
 
-  depends_on = [module.eks]
+  depends_on = [module.eks, helm_release.aws_lb_controller]
 }
