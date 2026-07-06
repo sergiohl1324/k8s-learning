@@ -12,8 +12,14 @@ PROFILE="$(terraform output -raw aws_profile)"
 #    destruir el cluster. El ALB lo crea el controller a partir del Ingress,
 #    NO es un recurso de Terraform — si se destruye el cluster primero, el
 #    ALB queda huérfano cobrando.
+#
+#    Orden importa: primero las Applications de ArgoCD (su finalizer
+#    resources-finalizer.argocd.argoproj.io hace que kubectl delete espere a que
+#    ArgoCD borre en cascada lo que administra — Ingress incluido — antes de
+#    devolver el control). El delete de Ingress de abajo queda como red de
+#    seguridad redundante, no como el mecanismo principal.
+kubectl delete -n argocd applications.argoproj.io --all --ignore-not-found --wait=true --timeout=120s
 kubectl delete -n app ingress --all --ignore-not-found
-kubectl delete -n argocd applications.argoproj.io --all --ignore-not-found
 sleep 15
 
 # 2. Destruye toda la infraestructura (EKS, node group, VPC, NAT GW, etc.)

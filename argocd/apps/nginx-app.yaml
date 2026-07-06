@@ -1,8 +1,13 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
+# finalizers: sin esto, borrar esta Application NO limpia el Ingress/Deployment que
+# administra — quedarían huérfanos en el cluster (y el ALB del Ingress seguiría cobrando
+# aunque hagas terraform destroy después).
 metadata:
   name: nginx-app
   namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
   source:
