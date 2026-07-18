@@ -17,9 +17,10 @@ module "vpc" {
   cidr = var.vpc_cidr
   azs  = var.azs
 
-  public_subnets  = var.public_subnets  # aquí vive el NAT Gateway
-  eks_subnets     = var.eks_subnets     # subnets privadas dedicadas a EKS (nodos van aquí)
-  private_subnets = var.private_subnets # no se usa para nada real — ver variables.tf
+  public_subnets   = var.public_subnets   # aquí vive el NAT Gateway
+  eks_subnets      = var.eks_subnets      # subnets privadas dedicadas a EKS (nodos van aquí)
+  private_subnets  = var.private_subnets  # no se usa para nada real — ver variables.tf
+  database_subnets = var.database_subnets # RDS — mod-aws-vpc crea su db_subnet_group solo
 
   # Requisito documentado de AWS para EKS: sin esto, el endpoint privado no resuelve por DNS
   # dentro de la VPC y los nodos no logran unirse al cluster (quedan "Still creating..." y
@@ -184,4 +185,100 @@ resource "helm_release" "kube_prometheus_stack" {
   }
 
   depends_on = [module.eks, helm_release.aws_lb_controller]
+}
+
+### RDS — base de datos del backend demo (declarada directa, sin módulo nuevo) ###
+#
+# mod-aws-rds existe pero solo soporta Aurora (aws_rds_cluster + aws_rds_cluster_instance) —
+# más pesado/lento de crear-destruir por sesión que una sola instancia Postgres, y no es como
+# corre su base de datos la mayoría de apps de este tamaño. Regla de tres: si se necesita una
+# 3ra instancia RDS en algún otro proyecto, ahí sí vale la pena extraer esto a un módulo.
+
+resource "aws_security_group" "rds" {
+  name_prefix = "${var.project}-rds-"
+  description = "Postgres (5432) solo desde los nodos EKS — nunca alcanzable fuera de la VPC"
+  vpc_id      = module.vpc.vpc_id
+
+  ingress {
+    description     = "Postgres desde los nodos EKS"
+    from_port       = 5432
+    to_port         = 5432
+    protocol        = "tcp"
+    security_groups = [module.eks.node_security_group_id]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = local.tags
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+resource "random_password" "db" {
+  length  = 24
+  special = false # evita caracteres que obliguen a escapar la connection string
+}
+
+resource "aws_db_instance" "demo" {
+  identifier     = "${var.project}-demo-db"
+  engine         = "postgres"
+  engine_version = "16"
+  instance_class = "db.t4g.micro"
+
+  allocated_storage = 20
+  storage_type      = "gp3"
+  storage_encrypted = true
+
+  db_name  = var.db_name
+  username = var.db_username
+  password = random_password.db.result
+  port     = 5432
+
+  db_subnet_group_name   = module.vpc.database_subnet_group
+  vpc_security_group_ids = [aws_security_group.rds.id]
+
+  multi_az            = false # single-AZ: costo/velocidad de un lab, no HA de producción real
+  publicly_accessible = false
+  skip_final_snapshot = true # se destruye cada sesión — sin esto, un destroy queda bloqueado
+  deletion_protection = false
+  apply_immediately   = true
+
+  tags = local.tags
+}
+
+# Generado por Terraform (no a mano por CLI, como hicimos la vez pasada con nginx-app) — cae
+# dentro del prefijo eks-lab/* que el rol IRSA de External Secrets ya puede leer, cero cambios
+# de IAM necesarios.
+resource "aws_secretsmanager_secret" "db_credentials" {
+  name        = "eks-lab/backend/db-credentials"
+  description = "Credenciales de RDS para demo-backend-api"
+  tags        = local.tags
+}
+
+resource "aws_secretsmanager_secret_version" "db_credentials" {
+  secret_id = aws_secretsmanager_secret.db_credentials.id
+  secret_string = jsonencode({
+    host     = aws_db_instance.demo.address
+    port     = aws_db_instance.demo.port
+    dbname   = aws_db_instance.demo.db_name
+    username = aws_db_instance.demo.username
+    password = random_password.db.result
+  })
+}
+
+### ECR — un repositorio por app de demo (mod-aws-ecr modernizado, reusado con for_each) ###
+
+module "ecr" {
+  source   = "git::https://github.com/sergiohl1324/mod-aws-ecr.git?ref=main"
+  for_each = toset(["demo-backend-api", "demo-frontend-web"])
+
+  ecr_name = each.key
+  tags     = local.tags
 }

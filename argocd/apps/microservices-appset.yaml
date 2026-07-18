@@ -1,0 +1,45 @@
+# ApplicationSet en vez de una Application escrita a mano por app (como nginx-app.yaml):
+# agregar una 3ra app a futuro es un elemento más en la lista de abajo, no un YAML nuevo.
+#
+# Multi-source: el chart vive en helm-app-chart ("equipo de plataforma"), los values viven
+# en este mismo repo bajo argocd/values/ ("equipo de la app") — patrón real de orgs con más
+# de un equipo compartiendo un chart común.
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: microservices
+  namespace: argocd
+spec:
+  generators:
+    - list:
+        elements:
+          - name: backend
+            valuesFile: backend-values.yaml
+          - name: frontend
+            valuesFile: frontend-values.yaml
+  template:
+    metadata:
+      name: "{{name}}-app"
+      finalizers:
+        - resources-finalizer.argocd.argoproj.io
+    spec:
+      project: default
+      sources:
+        - repoURL: https://github.com/sergiohl1324/helm-app-chart
+          targetRevision: main
+          path: .
+          helm:
+            valueFiles:
+              - $values/argocd/values/{{valuesFile}}
+        - repoURL: https://github.com/sergiohl1324/k8s-learning
+          targetRevision: HEAD
+          ref: values
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: demo
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true

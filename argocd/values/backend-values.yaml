@@ -1,0 +1,62 @@
+nameOverride: demo-backend-api
+
+image:
+  repository: REPLACED_BY_TERRAFORM_OUTPUT # ver K8S.md — pusheada manualmente la 1ra vez
+  tag: v0.1.0
+
+containerPort: 8080
+
+env:
+  - name: DB_HOST
+    valueFrom:
+      secretKeyRef:
+        name: demo-backend-api-secrets
+        key: host
+  - name: DB_PORT
+    valueFrom:
+      secretKeyRef:
+        name: demo-backend-api-secrets
+        key: port
+  - name: DB_NAME
+    valueFrom:
+      secretKeyRef:
+        name: demo-backend-api-secrets
+        key: dbname
+  - name: DB_USERNAME
+    valueFrom:
+      secretKeyRef:
+        name: demo-backend-api-secrets
+        key: username
+  - name: DB_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: demo-backend-api-secrets
+        key: password
+
+# readOnlyRootFilesystem: true (default del chart) — Python no necesita escribir nada más
+# que /tmp en este caso (PYTHONDONTWRITEBYTECODE=1 evita __pycache__ en el resto del árbol).
+extraVolumes:
+  - name: tmp
+    emptyDir: {}
+extraVolumeMounts:
+  - name: tmp
+    mountPath: /tmp
+
+externalSecret:
+  enabled: true
+  remoteKey: eks-lab/backend/db-credentials
+
+ingress:
+  enabled: true
+  path: /api
+  groupName: demo-apps
+  order: 10 # más específico, evaluado antes que el catch-all "/" del frontend
+
+hpa:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 4
+
+pdb:
+  enabled: true
+  minAvailable: 1

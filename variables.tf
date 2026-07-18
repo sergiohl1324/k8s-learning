@@ -52,6 +52,24 @@ variable "private_subnets" {
   default     = ["10.30.21.0/24", "10.30.22.0/24"]
 }
 
+variable "database_subnets" {
+  description = "Subnets dedicadas a RDS (pool database_subnets nativo de mod-aws-vpc, con su propio db_subnet_group). Sin ruta a NAT/IGW — solo alcanzables desde dentro de la VPC"
+  type        = list(string)
+  default     = ["10.30.31.0/24", "10.30.32.0/24"]
+}
+
+variable "db_name" {
+  description = "Nombre de la base de datos Postgres del backend demo"
+  type        = string
+  default     = "demoapp"
+}
+
+variable "db_username" {
+  description = "Usuario master de RDS"
+  type        = string
+  default     = "demoapp_admin"
+}
+
 variable "my_ip_cidr" {
   description = "Tu IP pública en formato CIDR (curl ifconfig.me), permitida en el endpoint público de EKS"
   type        = string

@@ -1,0 +1,44 @@
+nameOverride: demo-frontend-web
+
+image:
+  repository: REPLACED_BY_TERRAFORM_OUTPUT # ver K8S.md — pusheada manualmente la 1ra vez
+  tag: v0.1.0
+
+containerPort: 8080
+
+probes:
+  liveness:
+    path: /
+    initialDelaySeconds: 10
+    periodSeconds: 10
+  readiness:
+    path: /
+    initialDelaySeconds: 5
+    periodSeconds: 5
+
+# Mismo patrón que k8s/base/deployment.yaml (nginx-app): readOnlyRootFilesystem necesita
+# estos 3 emptyDir para que nginx pueda escribir cache/pid/tmp.
+extraVolumes:
+  - name: cache
+    emptyDir: {}
+  - name: run
+    emptyDir: {}
+  - name: tmp
+    emptyDir: {}
+extraVolumeMounts:
+  - name: cache
+    mountPath: /var/cache/nginx
+  - name: run
+    mountPath: /var/run
+  - name: tmp
+    mountPath: /tmp
+
+ingress:
+  enabled: true
+  path: /
+  groupName: demo-apps
+  order: 20 # catch-all, evaluado después de rutas más específicas como /api
+
+pdb:
+  enabled: true
+  minAvailable: 1
