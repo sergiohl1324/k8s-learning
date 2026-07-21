@@ -1,7 +1,7 @@
 nameOverride: demo-backend-api
 
 image:
-  repository: REPLACED_BY_TERRAFORM_OUTPUT # ver K8S.md — pusheada manualmente la 1ra vez
+  repository: 847460071795.dkr.ecr.us-east-1.amazonaws.com/demo-backend-api # ver K8S.md — pusheada manualmente la 1ra vez
   tag: v0.1.0
 
 containerPort: 8080
