@@ -1,5 +1,10 @@
 nameOverride: demo-frontend-web
 
+# 2 réplicas: con solo 1, pdb.minAvailable=1 nunca permite ninguna disrupción voluntaria
+# (0 "allowed disruptions" siempre) — bloquearía cualquier drain de nodo, incluida una
+# interrupción de Spot o un upgrade de cluster futuro.
+replicaCount: 2
+
 image:
   repository: 847460071795.dkr.ecr.us-east-1.amazonaws.com/demo-frontend-web # ver K8S.md — pusheada manualmente la 1ra vez
   tag: v0.1.0

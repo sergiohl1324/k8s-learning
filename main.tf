@@ -187,6 +187,19 @@ resource "helm_release" "kube_prometheus_stack" {
   depends_on = [module.eks, helm_release.aws_lb_controller]
 }
 
+# kube-prometheus-stack (arriba) NO reemplaza esto: HPA lee de la Metrics API estándar
+# (metrics.k8s.io), que solo sirve metrics-server — Prometheus expone sus propias métricas
+# por un path distinto. Sin esto, cualquier HPA se queda en "cpu: <unknown>/70%" y nunca
+# escala, sin importar cuántos helm_release de observabilidad tengas.
+resource "helm_release" "metrics_server" {
+  name       = "metrics-server"
+  repository = "https://kubernetes-sigs.github.io/metrics-server/"
+  chart      = "metrics-server"
+  namespace  = "kube-system"
+
+  depends_on = [module.eks, helm_release.aws_lb_controller]
+}
+
 ### RDS — base de datos del backend demo (declarada directa, sin módulo nuevo) ###
 #
 # mod-aws-rds existe pero solo soporta Aurora (aws_rds_cluster + aws_rds_cluster_instance) —
