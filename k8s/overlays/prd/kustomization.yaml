@@ -6,15 +6,11 @@ namespace: app
 resources:
   - ../../base
 
-# Patch: scale up replicas in prd
-patches:
-  - patch: |-
-      - op: replace
-        path: /spec/replicas
-        value: 3
-    target:
-      kind: Deployment
-      name: nginx-app
+# Nota: ya no hay un patch de replicas acá. Fijar spec.replicas en Git mientras un HPA
+# gestiona el mismo Deployment con selfHeal activo genera un loop infinito entre ArgoCD y el
+# HPA (ver comentario en ../../base/deployment.yaml y K8S.md Incidente #9). Si prd necesita un
+# piso/techo distinto de escalado, el lugar correcto es un patch sobre hpa.yaml
+# (minReplicas/maxReplicas), no sobre el Deployment.
 
 # Override image tag per environment
 images:

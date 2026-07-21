@@ -5,7 +5,11 @@ metadata:
   labels:
     app: nginx-app
 spec:
-  replicas: 2
+  # Sin spec.replicas a propósito: hay un HPA (hpa.yaml) gestionando este Deployment. Si Git
+  # fija un número y ArgoCD tiene selfHeal, cada escalado del HPA se revierte al valor de Git
+  # y el HPA lo vuelve a corregir — loop infinito de creación/terminación de pods (visible como
+  # la Application quedando "Progressing" sin estabilizar nunca). Mismo bug que ya se resolvió
+  # en helm-app-chart (ver K8S.md, Incidente #9) — acá es el mismo patrón vía Kustomize.
   selector:
     matchLabels:
       app: nginx-app
