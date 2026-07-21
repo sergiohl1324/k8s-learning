@@ -19,3 +19,4 @@ images:
 
 commonLabels:
   environment: prd
+  probando: kustomize
