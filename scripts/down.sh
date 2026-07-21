@@ -18,8 +18,15 @@ PROFILE="$(terraform output -raw aws_profile)"
 #    ArgoCD borre en cascada lo que administra — Ingress incluido — antes de
 #    devolver el control). El delete de Ingress de abajo queda como red de
 #    seguridad redundante, no como el mecanismo principal.
+#
+#    El ApplicationSet se borra ANTES que las Applications: si no, el controller de
+#    ApplicationSet recrea backend-app/frontend-app en cuanto el delete --all las borra,
+#    dejando a app-of-apps esperando para siempre a que sus hijos desaparezcan de verdad
+#    (timeout a los 120s, visto en vivo — ver K8S.md).
+kubectl delete -n argocd applicationsets.argoproj.io --all --ignore-not-found
 kubectl delete -n argocd applications.argoproj.io --all --ignore-not-found --wait=true --timeout=120s
 kubectl delete -n app ingress --all --ignore-not-found
+kubectl delete -n demo ingress --all --ignore-not-found
 sleep 15
 
 # 2. Destruye toda la infraestructura (EKS, node group, VPC, NAT GW, etc.)
