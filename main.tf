@@ -196,7 +196,7 @@ resource "helm_release" "kube_prometheus_stack" {
 
 resource "aws_security_group" "rds" {
   name_prefix = "${var.project}-rds-"
-  description = "Postgres (5432) solo desde los nodos EKS — nunca alcanzable fuera de la VPC"
+  description = "Postgres (5432) solo desde los nodos EKS - nunca alcanzable fuera de la VPC"
   vpc_id      = module.vpc.vpc_id
 
   ingress {
